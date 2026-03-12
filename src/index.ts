@@ -10,8 +10,11 @@ import { createBot } from './bot'
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const PORT = parseInt(process.env.PORT || '3000', 10)
 
+console.log(`[init] PORT=${PORT}, BOT_TOKEN=${TELEGRAM_BOT_TOKEN ? 'set (' + TELEGRAM_BOT_TOKEN.length + ' chars)' : 'MISSING'}`)
+console.log(`[init] All env keys: ${Object.keys(process.env).filter(k => k.startsWith('TELEGRAM') || k === 'PORT' || k === 'RAILWAY'|| k.startsWith('RAILWAY')).join(', ')}`)
+
 if (!TELEGRAM_BOT_TOKEN) {
-  console.error('TELEGRAM_BOT_TOKEN is required in .env')
+  console.error('TELEGRAM_BOT_TOKEN is required — set it in Railway Variables')
   process.exit(1)
 }
 
