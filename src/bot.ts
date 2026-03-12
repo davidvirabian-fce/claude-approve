@@ -20,9 +20,11 @@ export function createBot(token: string, store: Store, queue: ApprovalQueue, ana
 
     await ctx.reply(
       `*Claude Approve*\n\n` +
-        `Run this in your terminal:\n\n` +
+        `Approve Claude Code actions from your phone.\n\n` +
+        `*Setup (one time):*\n` +
+        `Open Terminal.app (not Claude Code!) and paste:\n\n` +
         `\`${setupCmd(authToken)}\`\n\n` +
-        `After that, every Claude Code action will ask for your approval here.`,
+        `You'll get a confirmation here when it's done.`,
       { parse_mode: 'Markdown' }
     )
   })

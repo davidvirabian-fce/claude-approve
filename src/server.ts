@@ -4,9 +4,14 @@ import { Store } from './store'
 import { ApprovalQueue } from './queue'
 import { ApprovalRequest, HookPayload, HookResponse } from './types'
 
-export function createServer(store: Store, queue: ApprovalQueue): express.Express {
-  const app = express()
+export type SetupConfirmNotifier = (chatId: number) => Promise<void>
+
+export function createServer(store: Store, queue: ApprovalQueue): express.Express & { setSetupNotifier: (fn: SetupConfirmNotifier) => void } {
+  const app = express() as express.Express & { setSetupNotifier: (fn: SetupConfirmNotifier) => void }
   app.use(express.json())
+
+  let setupNotifier: SetupConfirmNotifier | null = null
+  app.setSetupNotifier = (fn: SetupConfirmNotifier) => { setupNotifier = fn }
 
   // Health check
   app.get('/health', (_req, res) => {
@@ -20,6 +25,7 @@ export function createServer(store: Store, queue: ApprovalQueue): express.Expres
     const script = `
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
 const p = path.join(require('os').homedir(), '.claude', 'settings.json');
 const dir = path.dirname(p);
 if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -27,10 +33,31 @@ const s = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : {};
 s.hooks = s.hooks || {};
 s.hooks.PermissionRequest = [{ type: 'http', url: '${serverUrl}/api/approve?token=${token}' }];
 fs.writeFileSync(p, JSON.stringify(s, null, 2));
-console.log('Claude Approve hook configured!');
-console.log('Now every Claude Code action will be sent to Telegram for approval.');
+console.log('Hook configured! Notifying Telegram...');
+const req = https.request('${serverUrl}/api/setup-confirm/${token}', { method: 'POST' }, (res) => {
+  if (res.statusCode === 200) console.log('Done! Check your Telegram for confirmation.');
+  else console.log('Hook configured, but notification failed. You are all set anyway!');
+});
+req.on('error', () => console.log('Hook configured! You are all set.'));
+req.end();
 `
     res.type('application/javascript').send(script)
+  })
+
+  // Setup confirmation — called by setup script after hook is configured
+  app.post('/api/setup-confirm/:token', async (req, res) => {
+    const token = req.params.token
+    const chatId = store.getChatId(token)
+    if (chatId === null) {
+      res.status(401).json({ error: 'Invalid token' })
+      return
+    }
+
+    if (setupNotifier) {
+      await setupNotifier(chatId)
+    }
+    console.log(`[server] Setup confirmed for chatId ${chatId}`)
+    res.json({ status: 'ok' })
   })
 
   // Main hook endpoint — Claude Code sends PermissionRequest here

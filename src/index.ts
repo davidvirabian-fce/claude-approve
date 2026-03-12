@@ -26,6 +26,11 @@ async function main() {
   const bot = createBot(TELEGRAM_BOT_TOKEN!, store, queue, analytics)
   const app = createServer(store, queue)
 
+  // Wire up setup confirmation: when user runs setup script, notify them in Telegram
+  app.setSetupNotifier(async (chatId: number) => {
+    await bot.api.sendMessage(chatId, '✅ *Hook configured!*\n\nClaude Code is now connected. Every action will be sent here for your approval.', { parse_mode: 'Markdown' })
+  })
+
   // Start Express server — bind to 0.0.0.0 for Railway/Docker
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[server] Listening on 0.0.0.0:${PORT}`)
