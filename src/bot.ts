@@ -24,7 +24,13 @@ export function createBot(token: string, store: Store, queue: ApprovalQueue, ana
         `*Setup (one time):*\n` +
         `Open your terminal (not Claude Code!) and paste:\n\n` +
         `\`${setupCmd(authToken)}\`\n\n` +
-        `You'll get a confirmation here when it's done.`,
+        `You'll get a confirmation here when it's done.\n\n` +
+        `*Commands:*\n` +
+        `/remote — every action needs your approval\n` +
+        `/local — auto-approve all actions\n` +
+        `/status — show current mode\n` +
+        `/stats — usage analytics\n` +
+        `/setup — show setup command again`,
       { parse_mode: 'Markdown' }
     )
   })
@@ -36,6 +42,43 @@ export function createBot(token: string, store: Store, queue: ApprovalQueue, ana
 
     await ctx.reply(
       `Run this in your terminal:\n\n\`${setupCmd(authToken)}\``,
+      { parse_mode: 'Markdown' }
+    )
+  })
+
+  // /remote — switch to remote mode (all actions need approval)
+  bot.command('remote', async (ctx) => {
+    const chatId = ctx.chat.id
+    store.setMode(chatId, 'remote')
+    await ctx.reply(
+      `🔒 *Remote mode ON*\n\n` +
+        `Every Claude Code action will now be sent here for your approval.\n` +
+        `Use /local when you're back at your computer.`,
+      { parse_mode: 'Markdown' }
+    )
+  })
+
+  // /local — switch to local mode (auto-approve all)
+  bot.command('local', async (ctx) => {
+    const chatId = ctx.chat.id
+    store.setMode(chatId, 'local')
+    await ctx.reply(
+      `🔓 *Local mode*\n\n` +
+        `Actions are now auto-approved. Claude Code works at full speed.\n` +
+        `Use /remote when you step away.`,
+      { parse_mode: 'Markdown' }
+    )
+  })
+
+  // /status — show current mode
+  bot.command('status', async (ctx) => {
+    const chatId = ctx.chat.id
+    const authToken = store.register(chatId)
+    const mode = store.getMode(authToken)
+    const modeLabel = mode === 'remote' ? '🔒 Remote' : '🔓 Local'
+    await ctx.reply(
+      `*Current mode:* ${modeLabel}\n` +
+        `Pending requests: ${queue.size}`,
       { parse_mode: 'Markdown' }
     )
   })

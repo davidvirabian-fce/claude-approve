@@ -31,7 +31,7 @@ const dir = path.dirname(p);
 if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 const s = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : {};
 s.hooks = s.hooks || {};
-s.hooks.PermissionRequest = [{ type: 'http', url: '${serverUrl}/api/approve?token=${token}' }];
+s.hooks.PreToolUse = [{ type: 'http', url: '${serverUrl}/api/hook?token=${token}' }];
 fs.writeFileSync(p, JSON.stringify(s, null, 2));
 console.log('Hook configured! Notifying Telegram...');
 const req = https.request('${serverUrl}/api/setup-confirm/${token}', { method: 'POST' }, (res) => {
@@ -60,7 +60,58 @@ req.end();
     res.json({ status: 'ok' })
   })
 
-  // Main hook endpoint — Claude Code sends PermissionRequest here
+  // PreToolUse hook — fires on EVERY tool call
+  app.post('/api/hook', async (req, res) => {
+    const token = req.query.token as string
+    if (!token) {
+      res.status(401).json({ error: 'Missing token' })
+      return
+    }
+
+    const chatId = store.getChatId(token)
+    if (chatId === null) {
+      res.status(401).json({ error: 'Invalid token' })
+      return
+    }
+
+    const mode = store.getMode(token)
+
+    // Local mode — auto-approve immediately
+    if (mode === 'local') {
+      res.json({})
+      return
+    }
+
+    // Remote mode — send to Telegram and wait for decision
+    const payload = req.body as HookPayload
+    const request: ApprovalRequest = {
+      id: uuidv4(),
+      token,
+      toolName: payload.tool_name || 'Unknown',
+      toolInput: payload.tool_input || {},
+      sessionId: payload.session_id || 'unknown',
+      cwd: payload.cwd || '',
+      timestamp: Date.now(),
+    }
+
+    console.log(`[hook] Remote approval: ${request.toolName} from session ${request.sessionId}`)
+
+    const decision = await queue.add(chatId, request)
+
+    if (decision.behavior === 'deny') {
+      res.json({
+        hookSpecificOutput: {
+          hookEventName: 'PreToolUse',
+          decision: 'block',
+          reason: decision.message || 'Denied via Telegram',
+        },
+      })
+    } else {
+      res.json({})
+    }
+  })
+
+  // Legacy PermissionRequest endpoint (backward compat)
   app.post('/api/approve', async (req, res) => {
     const token = req.query.token as string
     if (!token) {

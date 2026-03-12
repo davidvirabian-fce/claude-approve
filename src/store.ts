@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import { UserRecord } from './types'
+import { Mode, UserRecord } from './types'
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data')
 const USERS_FILE = path.join(DATA_DIR, 'users.json')
@@ -31,6 +31,19 @@ export class Store {
   getChatId(token: string): number | null {
     const record = this.byToken.get(token)
     return record ? record.chatId : null
+  }
+
+  getMode(token: string): Mode {
+    const record = this.byToken.get(token)
+    return record?.mode || 'local'
+  }
+
+  setMode(chatId: number, mode: Mode): void {
+    const record = this.byChatId.get(chatId)
+    if (record) {
+      record.mode = mode
+      this.save()
+    }
   }
 
   private load(): void {

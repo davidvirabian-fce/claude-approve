@@ -20,10 +20,13 @@ export interface Decision {
   message?: string
 }
 
+export type Mode = 'local' | 'remote'
+
 export interface UserRecord {
   chatId: number
   token: string
   createdAt: number
+  mode?: Mode
 }
 
 export interface HookPayload {
@@ -37,8 +40,8 @@ export interface HookPayload {
 
 export interface HookResponse {
   hookSpecificOutput: {
-    hookEventName: 'PermissionRequest'
-    decision: Decision
+    hookEventName: 'PreToolUse' | 'PermissionRequest'
+    decision?: Decision
   }
 }
 
