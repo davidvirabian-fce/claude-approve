@@ -16,7 +16,7 @@ export function createServer(store: Store, queue: ApprovalQueue): express.Expres
   // Setup script endpoint — user runs: curl -sL .../setup/TOKEN | node
   app.get('/setup/:token', (req, res) => {
     const token = req.params.token
-    const serverUrl = process.env.SERVER_URL || `${req.protocol}://${req.get('host')}`
+    const serverUrl = process.env.SERVER_URL || `https://${req.get('host')}`
     const script = `
 const fs = require('fs');
 const path = require('path');
