@@ -9,8 +9,8 @@ export function createBot(token: string, store: Store, queue: ApprovalQueue, ana
 
   const SERVER_URL = process.env.SERVER_URL || 'https://claude-approve-production.up.railway.app'
 
-  function setupCommand(token: string): string {
-    return `mkdir -p ~/.claude && node -e "const fs=require('fs');const p=require('path').join(require('os').homedir(),'.claude','settings.json');const s=fs.existsSync(p)?JSON.parse(fs.readFileSync(p,'utf8')):{};s.hooks=s.hooks||{};s.hooks.PermissionRequest=[{type:'http',url:'${SERVER_URL}/api/approve?token=${token}'}];fs.writeFileSync(p,JSON.stringify(s,null,2));console.log('Hook configured!')"
+  function setupCmd(token: string): string {
+    return `curl -sL ${SERVER_URL}/setup/${token} | node`
   }
 
   // /start — register user and show token + setup command
@@ -20,11 +20,8 @@ export function createBot(token: string, store: Store, queue: ApprovalQueue, ana
 
     await ctx.reply(
       `*Claude Approve*\n\n` +
-        `Your token: \`${authToken}\`\n\n` +
-        `Copy and paste this command in your terminal:\n\n` +
-        '```\n' +
-        setupCommand(authToken) + '\n' +
-        '```\n\n' +
+        `Run this in your terminal:\n\n` +
+        `\`${setupCmd(authToken)}\`\n\n` +
         `After that, every Claude Code action will ask for your approval here.`,
       { parse_mode: 'Markdown' }
     )
@@ -36,10 +33,7 @@ export function createBot(token: string, store: Store, queue: ApprovalQueue, ana
     const authToken = store.register(chatId)
 
     await ctx.reply(
-      `Copy and paste this command in your terminal:\n\n` +
-        '```\n' +
-        setupCommand(authToken) + '\n' +
-        '```',
+      `Run this in your terminal:\n\n\`${setupCmd(authToken)}\``,
       { parse_mode: 'Markdown' }
     )
   })

@@ -13,6 +13,26 @@ export function createServer(store: Store, queue: ApprovalQueue): express.Expres
     res.json({ status: 'ok', pending: queue.size })
   })
 
+  // Setup script endpoint — user runs: curl -sL .../setup/TOKEN | node
+  app.get('/setup/:token', (req, res) => {
+    const token = req.params.token
+    const serverUrl = process.env.SERVER_URL || `${req.protocol}://${req.get('host')}`
+    const script = `
+const fs = require('fs');
+const path = require('path');
+const p = path.join(require('os').homedir(), '.claude', 'settings.json');
+const dir = path.dirname(p);
+if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+const s = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : {};
+s.hooks = s.hooks || {};
+s.hooks.PermissionRequest = [{ type: 'http', url: '${serverUrl}/api/approve?token=${token}' }];
+fs.writeFileSync(p, JSON.stringify(s, null, 2));
+console.log('Claude Approve hook configured!');
+console.log('Now every Claude Code action will be sent to Telegram for approval.');
+`
+    res.type('application/javascript').send(script)
+  })
+
   // Main hook endpoint — Claude Code sends PermissionRequest here
   app.post('/api/approve', async (req, res) => {
     const token = req.query.token as string
