@@ -10,7 +10,7 @@ export function createBot(token: string, store: Store, queue: ApprovalQueue, ana
   const SERVER_URL = process.env.SERVER_URL || 'https://claude-approve-production.up.railway.app'
 
   function setupCommand(token: string): string {
-    return `mkdir -p ~/.claude && node -e "\nconst fs=require('fs');\nconst p=require('path').join(require('os').homedir(),'.claude','settings.json');\nconst s=fs.existsSync(p)?JSON.parse(fs.readFileSync(p,'utf8')):{};s.hooks=s.hooks||{};\ns.hooks.PermissionRequest=[{type:'http',url:'${SERVER_URL}/api/approve?token=${token}'}];\nfs.writeFileSync(p,JSON.stringify(s,null,2));\nconsole.log('Hook configured!')\n"`
+    return `mkdir -p ~/.claude && node -e "const fs=require('fs');const p=require('path').join(require('os').homedir(),'.claude','settings.json');const s=fs.existsSync(p)?JSON.parse(fs.readFileSync(p,'utf8')):{};s.hooks=s.hooks||{};s.hooks.PermissionRequest=[{type:'http',url:'${SERVER_URL}/api/approve?token=${token}'}];fs.writeFileSync(p,JSON.stringify(s,null,2));console.log('Hook configured!')"
   }
 
   // /start — register user and show token + setup command
