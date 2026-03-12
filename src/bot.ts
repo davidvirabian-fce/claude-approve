@@ -22,7 +22,7 @@ export function createBot(token: string, store: Store, queue: ApprovalQueue, ana
       `*Claude Approve*\n\n` +
         `Approve Claude Code actions from your phone.\n\n` +
         `*Setup (one time):*\n` +
-        `Open Terminal.app (not Claude Code!) and paste:\n\n` +
+        `Open your terminal (not Claude Code!) and paste:\n\n` +
         `\`${setupCmd(authToken)}\`\n\n` +
         `You'll get a confirmation here when it's done.`,
       { parse_mode: 'Markdown' }
