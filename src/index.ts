@@ -23,10 +23,9 @@ async function main() {
   const bot = createBot(TELEGRAM_BOT_TOKEN!, store, queue, analytics)
   const app = createServer(store, queue)
 
-  // Start Express server
-  app.listen(PORT, () => {
-    console.log(`[server] Listening on port ${PORT}`)
-    console.log(`[server] Hook URL: http://localhost:${PORT}/api/approve?token=YOUR_TOKEN`)
+  // Start Express server — bind to 0.0.0.0 for Railway/Docker
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[server] Listening on 0.0.0.0:${PORT}`)
   })
 
   // Start Telegram bot
