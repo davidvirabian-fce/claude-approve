@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { HistoryEntry } from './types'
 
-const DATA_DIR = path.join(__dirname, '..', 'data')
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data')
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json')
 
 export class Analytics {

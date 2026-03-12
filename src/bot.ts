@@ -7,29 +7,39 @@ import { ApprovalRequest } from './types'
 export function createBot(token: string, store: Store, queue: ApprovalQueue, analytics: Analytics): Bot {
   const bot = new Bot(token)
 
-  // /start — register user and show token
+  const SERVER_URL = process.env.SERVER_URL || 'https://claude-approve-production.up.railway.app'
+
+  function setupCommand(token: string): string {
+    return `mkdir -p ~/.claude && node -e "\nconst fs=require('fs');\nconst p=require('path').join(require('os').homedir(),'.claude','settings.json');\nconst s=fs.existsSync(p)?JSON.parse(fs.readFileSync(p,'utf8')):{};s.hooks=s.hooks||{};\ns.hooks.PermissionRequest=[{type:'http',url:'${SERVER_URL}/api/approve?token=${token}'}];\nfs.writeFileSync(p,JSON.stringify(s,null,2));\nconsole.log('Hook configured!')\n"`
+  }
+
+  // /start — register user and show token + setup command
   bot.command('start', async (ctx) => {
     const chatId = ctx.chat.id
     const authToken = store.register(chatId)
 
     await ctx.reply(
-      `🔑 *Your Claude Approve Token*\n\n` +
-        `\`${authToken}\`\n\n` +
-        `Add this to your Claude Code settings:\n\n` +
-        `\`~/.claude/settings.json\`\n` +
-        '```json\n' +
-        '{\n' +
-        '  "hooks": {\n' +
-        '    "PermissionRequest": [\n' +
-        '      {\n' +
-        '        "type": "http",\n' +
-        `        "url": "YOUR_SERVER_URL/api/approve?token=${authToken}"\n` +
-        '      }\n' +
-        '    ]\n' +
-        '  }\n' +
-        '}\n' +
+      `*Claude Approve*\n\n` +
+        `Your token: \`${authToken}\`\n\n` +
+        `Copy and paste this command in your terminal:\n\n` +
+        '```\n' +
+        setupCommand(authToken) + '\n' +
         '```\n\n' +
-        `Replace \`YOUR_SERVER_URL\` with your server address.`,
+        `After that, every Claude Code action will ask for your approval here.`,
+      { parse_mode: 'Markdown' }
+    )
+  })
+
+  // /setup — show setup command again
+  bot.command('setup', async (ctx) => {
+    const chatId = ctx.chat.id
+    const authToken = store.register(chatId)
+
+    await ctx.reply(
+      `Copy and paste this command in your terminal:\n\n` +
+        '```\n' +
+        setupCommand(authToken) + '\n' +
+        '```',
       { parse_mode: 'Markdown' }
     )
   })
