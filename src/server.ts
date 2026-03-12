@@ -13,9 +13,16 @@ export function createServer(store: Store, queue: ApprovalQueue): express.Expres
   let setupNotifier: SetupConfirmNotifier | null = null
   app.setSetupNotifier = (fn: SetupConfirmNotifier) => { setupNotifier = fn }
 
-  // Health check
+  // Health check + debug
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', pending: queue.size })
+  })
+
+  app.get('/debug/:token', (req, res) => {
+    const token = req.params.token
+    const chatId = store.getChatId(token)
+    const mode = store.getMode(token)
+    res.json({ token: token.substring(0, 8) + '...', chatId, mode })
   })
 
   // Setup script endpoint — user runs: curl -sL .../setup/TOKEN | node
